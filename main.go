@@ -2,35 +2,42 @@ package PROJECT_FINAL_GROUP01
 
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
+	"strconv"
 
 	_ "github.com/lib/pq"
+
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/bot"
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/config"
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/model"
 )
 
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "bigpass"
-	dbname   = "project"
-)
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
+	fmt.Println("Starting Bot")
 
-	err = db.Ping()
-	if err != nil {
-		panic(err)
+	env, _ := godotenv.Read(".env")
+
+	dbPort, dbErr := strconv.ParseInt(env["DB_PORT"], 10, 64)
+
+	if dbErr != nil {
+		panic(dbErr)
 	}
 
-	fmt.Println("Successfully connected!")
+	model.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
+
+	botCredsErr := config.ReadConfig()
+
+	if botCredsErr != nil {
+		fmt.Println(botCredsErr.Error())
+		return
+	}
+
+	bot.Start()
+
+	<-make(chan struct{})
+
+	return
 }
