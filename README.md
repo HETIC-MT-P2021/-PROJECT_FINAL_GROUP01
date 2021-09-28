@@ -1,7 +1,7 @@
-# Discrabble
+# Dimo
 
 
-Discrabbl, accessible via @discrabbl, is a bot for playing Scrabble on Discord. It randomly takes a word from the dictionary, replaces random letters in it and presents it to the player. The player will then have to guess the initial word chosen by the bot within a maximum number of tries.
+Dimo is a bot for playing the Word String game on Discord. There is an order to follow in order to play. The game is played only in multiplayer (2 to 5 players). The order of players is defined by the order of arrival of each player in the game. One of the players enters a word. The next player continues with another word starting with the last letter of the previous word. The next one goes on and so on.
 
 
 ## Contributing
