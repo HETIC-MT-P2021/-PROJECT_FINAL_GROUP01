@@ -3,12 +3,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/Dimo"
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/model"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -20,7 +23,7 @@ var (
 
 func main() {
 	//Database connection
-	/*env, _ := godotenv.Read(".env")
+	env, _ := godotenv.Read(".env")
 
 	dbPort, dbErr := strconv.ParseInt(env["DB_PORT"], 10, 64)
 
@@ -28,7 +31,7 @@ func main() {
 		panic(dbErr)
 	}
 
-	model.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)*/
+	model.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
 
 	//Bot connection
 
