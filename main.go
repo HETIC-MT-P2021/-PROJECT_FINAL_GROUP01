@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dimo/bot"
+	"github.com/dimo/database"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -28,7 +29,7 @@ func main() {
 		panic(dbErr)
 	}
 
-	ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
+	database.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
 
 	// Bot connection
 	games = make(map[string]*bot.Game)
@@ -86,8 +87,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			resp = "There is no active game. Create a game"
 		}
 
-		resp = game.AddPlayer(bot.NewPlayerFromDiscordAuthor(m.Author))
-
+		player := bot.NewPlayerFromDiscordAuthor(m.Author)
+		resp = game.AddPlayer(&player)
 		s.ChannelMessageSend(m.ChannelID, resp)
 	}
 
@@ -98,13 +99,22 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "There is no active game. Create a game")
 			return
 		}
+
+		if len(game.Players) == 1 {
+			s.ChannelMessageSend(m.ChannelID, "You cannot play the game alone. Invite your friends to join you")
+			return
+		}
+
 		if game.IsActive {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintln("The game started already"))
 			return
 		}
+
 		game.Start()
+
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintln("The game has started"))
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, it is your turn to play", game.GetCurrentPlayer().Name))
+
 		return
 	}
 
@@ -124,7 +134,7 @@ func handleGame(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	player := game.GetPlayerById(m.Author.ID)
+	player := game.GetPlayerByDiscordId(m.Author.ID)
 	if player != nil {
 		resp := game.Play(*player, m.Content)
 		s.ChannelMessageSend(m.ChannelID, resp)

@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"database/sql"
@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var db *sql.DB
+var Database *sql.DB
 
 // ConnectToDB Set up connection to the postgres DB
 // Will panic on error
@@ -51,7 +51,7 @@ func ConnectToDB(host string, dbname string, user string, password string, port 
 
 	// defer the close till after the main function has finished
 	// executing
-	db = tempDB
+	Database = tempDB
 }
 
 // CloseDbConnection will end dialogue with the DB
