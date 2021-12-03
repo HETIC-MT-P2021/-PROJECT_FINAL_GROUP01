@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	Dimo "github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/struct"
 	"time"
 	// Import for postgres
 	_ "github.com/lib/pq"
@@ -52,6 +53,64 @@ func ConnectToDB(host string, dbname string, user string, password string, port 
 	// defer the close till after the main function has finished
 	// executing
 	db = tempDB
+}
+
+func connectDb()  {
+	ConnectToDB("db-postgresql-nyc3-10435-do-user-9402464-0.b.db.ondigitalocean.com", "defaultdb", "doadmin", "S8UO9iNtyaYIaHzL", 25060)
+}
+
+func GetAllPlayers() []Dimo.Player  {
+	connectDb()
+	rows, err := db.Query("SELECT * FROM player")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var pls []Dimo.Player
+
+	for rows.Next() {
+		var pl Dimo.Player
+
+		err := rows.Scan(&pl.PlayerId, &pl.Name, &pl.Avatar, &pl.DiscordId)
+		if err != nil {
+			panic(err)
+		}
+
+		pls = append(pls, pl)
+	}
+	if err = rows.Err(); err != nil {
+		panic(err)
+	}
+
+	return pls
+}
+
+func GetAllRounds() []Dimo.Round  {
+	connectDb()
+	rows, err := db.Query("SELECT * FROM round")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var rds []Dimo.Round
+
+	for rows.Next() {
+		var rd Dimo.Round
+
+		err := rows.Scan(&rd.GameId, &rd.PlayerId, &rd.Reason, &rd.Word, &rd.SubmittedAt)
+		if err != nil {
+			panic(err)
+		}
+
+		rds = append(rds, rd)
+	}
+	if err = rows.Err(); err != nil {
+		panic(err)
+	}
+
+	return rds
 }
 
 // CloseDbConnection will end dialogue with the DB

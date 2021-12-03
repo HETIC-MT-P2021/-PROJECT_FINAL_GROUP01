@@ -1,25 +1,66 @@
 package main
 
-
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/Dimo"
+	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/model"
+	"github.com/bwmarrin/discordgo"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/Dimo"
-	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/model"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 var (
 	token string
 	games map[string]*Dimo.Game
 )
+
+type Player struct {
+	PlayerId  int `json:"player_id"`
+	Name      string `json:"name"`
+	Avatar    string `json:"avatar"`
+	DiscordId int `json:"discord_id"`
+}
+
+type Round struct {
+	GameId      int `json:"game_id"`
+	PlayerId    int `json:"player_id"`
+	Reason      string `json:"reason"`
+	Word        string `json:"word"`
+	SubmittedAt string `json:"submitted_at"`
+}
+
+var Players = model.GetAllPlayers()
+var Rounds = model.GetAllRounds()
+
+func returnAllRounds(w http.ResponseWriter, r *http.Request){
+	fmt.Println("Endpoint Hit: returnAllArticles")
+	json.NewEncoder(w).Encode(Rounds)
+}
+
+func returnAllPlayers(w http.ResponseWriter, r *http.Request){
+	fmt.Println("Endpoint Hit: returnAllArticles")
+	json.NewEncoder(w).Encode(Players)
+}
+
+// Existing code from above
+func handleRequests() {
+	// creates a new instance of a mux router
+	myRouter := mux.NewRouter().StrictSlash(true)
+	// replace http.HandleFunc with myRouter.HandleFunc
+	myRouter.HandleFunc("/games", returnAllPlayers)
+	myRouter.HandleFunc("/rounds", returnAllRounds)
+	// finally, instead of passing in nil, we want
+	// to pass in our newly created router as the second
+	// argument
+	log.Fatal(http.ListenAndServe(":8080", myRouter))
+}
 
 func main() {
 	//Database connection
@@ -44,6 +85,10 @@ func main() {
 		log.Println("Unable to create a session on the server for the bot dimo")
 		return
 	}
+
+	//
+	handleRequests()
+	//
 
 	sess.AddHandler(messageCreate)
 
