@@ -19,7 +19,7 @@ var (
 )
 
 func main() {
-	//Database connection
+	// Database connection
 	env, _ := godotenv.Read(".env")
 
 	dbPort, dbErr := strconv.ParseInt(env["DB_PORT"], 10, 64)
@@ -30,8 +30,7 @@ func main() {
 
 	ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
 
-	//Bot connection
-
+	// Bot connection
 	games = make(map[string]*bot.Game)
 
 	var conf = bot.NewConfig
@@ -58,39 +57,43 @@ func main() {
 	<-ch
 }
 
-//player participation in the game
-
+// Player participation in the game
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	log.Println(m.Content)
-
 	if m.Content == "/play" {
 		game := games[m.ChannelID]
+
 		if game == nil {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v just created a game press /join to join the game", m.Author.Username))
-			games[m.ChannelID] = bot.NewParty(m.Author.Username, func(winner string) {
+			var player = bot.NewPlayerFromDiscordAuthor(m.Author)
+			games[m.ChannelID] = bot.NewGame(player, func(winner bot.Player) {
 				delete(games, m.ChannelID)
 			})
+
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v just created a game press /join to join the game", player.Name))
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "There is an active game, you can join it")
 		}
 	}
 
-	if m.Content == "👋" {
+	if m.Content == "👋" || m.Content == "/join" {
 		game := games[m.ChannelID]
+
 		var resp string
 		if game == nil {
 			resp = "There is no active game. Create a game"
 		}
-		resp = game.AddPlayer(m.Author.Username)
+
+		resp = game.AddPlayer(bot.NewPlayerFromDiscordAuthor(m.Author))
+
 		s.ChannelMessageSend(m.ChannelID, resp)
 	}
 
-	if m.Content == "➡️" {
+	if m.Content == "➡️" || m.Content == "/start" {
 		game := games[m.ChannelID]
+
 		if game == nil {
 			s.ChannelMessageSend(m.ChannelID, "There is no active game. Create a game")
 			return
@@ -101,7 +104,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		game.Start()
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintln("The game has started"))
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, it is your turn to play", game.ActivePlayer))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, it is your turn to play", game.GetCurrentPlayer().Name))
 		return
 	}
 
@@ -116,13 +119,15 @@ func handleGame(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	log.Println("")
 	game := games[m.ChannelID]
 	if game == nil || !game.IsActive {
 		return
 	}
 
-	resp := game.Play(m.Author.Username, m.Content)
-	log.Println(resp)
-	s.ChannelMessageSend(m.ChannelID, resp)
+	player := game.GetPlayerById(m.Author.ID)
+	if player != nil {
+		resp := game.Play(*player, m.Content)
+		s.ChannelMessageSend(m.ChannelID, resp)
+	}
+	// Player not found
 }
