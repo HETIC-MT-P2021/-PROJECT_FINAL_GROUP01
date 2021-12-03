@@ -21,6 +21,8 @@ type Game struct {
 	IsActive           bool
 	StartedAt          int64
 	FinishedAt         int64
+	FirstMessageId     string
+	StartedBy          Player
 }
 
 func insertGame(game *Game) (*Game, error) {
@@ -52,7 +54,7 @@ func updateGame(game *Game) {
 	database.Database.Exec(sql, game.StartedAt, game.FinishedAt, game.Id)
 }
 
-func NewGame(gameAdmin Player, onGameEnd func(winner Player)) *Game {
+func NewGame(gameAdmin Player, firstMessageId string, onGameEnd func(winner Player)) *Game {
 	game := Game{
 		Players:            make([]Player, 0),
 		CurrentPlayerIndex: 0,
@@ -62,6 +64,8 @@ func NewGame(gameAdmin Player, onGameEnd func(winner Player)) *Game {
 		IsActive:           false,
 		StartedAt:          0,
 		FinishedAt:         0,
+		FirstMessageId:     firstMessageId,
+		StartedBy:          gameAdmin,
 	}
 
 	game.AddPlayer(&gameAdmin)
@@ -88,6 +92,16 @@ func (g *Game) Finish() {
 	updateGame(g)
 }
 
+func (g *Game) GetPlayersNames() string {
+	var allPlayersNames = ""
+
+	for index, player := range g.Players {
+		allPlayersNames += fmt.Sprintf("%v- %v\n", index+1, player.Name)
+	}
+
+	return allPlayersNames
+}
+
 func (g *Game) GetCurrentPlayer() Player {
 	return g.Players[g.CurrentPlayerIndex]
 }
@@ -111,7 +125,7 @@ func (g *Game) GetNextPlayerIndex() int {
 	return nextPlayerIndex
 }
 
-func (g *Game) AddPlayer(candidatePlayer *Player) string {
+func (g *Game) AddPlayer(candidatePlayer *Player) (bool, string) {
 	if len(g.Players) < maxPlayersInParty {
 		isInGameAlready := false
 
@@ -123,7 +137,7 @@ func (g *Game) AddPlayer(candidatePlayer *Player) string {
 		}
 
 		if isInGameAlready {
-			return fmt.Sprintln("You are already in the game")
+			return false, fmt.Sprintln("You are already in the game")
 		} else {
 			g.Players = append(g.Players, *candidatePlayer)
 
@@ -133,10 +147,10 @@ func (g *Game) AddPlayer(candidatePlayer *Player) string {
 			}
 		}
 	} else {
-		return fmt.Sprintln("Game is filled up, sorry :(")
+		return false, fmt.Sprintln("Game is filled up, sorry :(")
 	}
 
-	return fmt.Sprintf("%s joined the game", candidatePlayer.Name)
+	return true, candidatePlayer.Name
 }
 
 func (g *Game) removePlayer(playerToRemove Player) Player {

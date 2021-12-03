@@ -69,11 +69,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		if game == nil {
 			var player = bot.NewPlayerFromDiscordAuthor(m.Author)
-			games[m.ChannelID] = bot.NewGame(player, func(winner bot.Player) {
+
+			message, _ := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello @here :smiley: \n**%v** just created a new Dimo game party :partying_face: \nHis game needs at least **2 players** to be started ! :wink: \n\n**Join him by sending:** :wave: \n**Start the game by sending:** :arrow_forward: \n\nHappy gaming ! :smirk_cat:", player.Name))
+
+			games[m.ChannelID] = bot.NewGame(player, message.ID, func(winner bot.Player) {
 				delete(games, m.ChannelID)
 			})
-
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v just created a game press /join to join the game", player.Name))
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "There is an active game, you can join it")
 		}
@@ -83,13 +84,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		game := games[m.ChannelID]
 
 		var resp string
+		var status bool
 		if game == nil {
 			resp = "There is no active game. Create a game"
 		}
 
 		player := bot.NewPlayerFromDiscordAuthor(m.Author)
-		resp = game.AddPlayer(&player)
-		s.ChannelMessageSend(m.ChannelID, resp)
+		status, resp = game.AddPlayer(&player)
+
+		if status {
+			s.ChannelMessageEdit(m.ChannelID, game.FirstMessageId, fmt.Sprintf(
+				"Hello @here :smiley: \n**%v** just created a new Dimo game party :partying_face: \nHis game needs at least **2 players** to be started ! :wink: \n\n**Join him by sending:** :wave: \n**Start the game by sending:** :arrow_forward: \n\n**Playing queue:**\n%v \nHappy gaming ! :smirk_cat:",
+				game.StartedBy.Name,
+				game.GetPlayersNames(),
+			))
+		} else {
+			s.ChannelMessageSend(m.ChannelID, resp)
+		}
 	}
 
 	if m.Content == "➡️" || m.Content == "/start" {
