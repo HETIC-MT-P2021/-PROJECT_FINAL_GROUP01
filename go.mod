@@ -1,4 +1,4 @@
-module github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01
+module github.com/dimo
 
 go 1.16
 

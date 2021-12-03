@@ -1,8 +1,8 @@
 package main
 
-
 import (
 	"fmt"
+	"github.com/dimo/bot"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -10,15 +10,12 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/Dimo"
-	"github.com/HETIC-MT-P2021/PROJECT_FINAL_GROUP01/model"
-
 	"github.com/bwmarrin/discordgo"
 )
 
 var (
 	token string
-	games map[string]*Dimo.Game
+	games map[string]*bot.Game
 )
 
 func main() {
@@ -31,13 +28,13 @@ func main() {
 		panic(dbErr)
 	}
 
-	model.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
+	ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
 
 	//Bot connection
 
-	games = make(map[string]*Dimo.Game)
+	games = make(map[string]*bot.Game)
 
-	var conf = Dimo.NewConfig
+	var conf = bot.NewConfig
 	token = conf().Token
 	sess, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -60,6 +57,7 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-ch
 }
+
 //player participation in the game
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -73,7 +71,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		game := games[m.ChannelID]
 		if game == nil {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v just created a game press /join to join the game", m.Author.Username))
-			games[m.ChannelID] = Dimo.NewGame(m.Author.Username, func(winner string) {
+			games[m.ChannelID] = bot.NewParty(m.Author.Username, func(winner string) {
 				delete(games, m.ChannelID)
 			})
 		} else {
@@ -97,13 +95,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "There is no active game. Create a game")
 			return
 		}
-		if game.IsActive() {
+		if game.IsActive {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintln("The game started already"))
 			return
 		}
 		game.Start()
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintln("The game has started"))
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, it is your turn to play", game.GetCurrentPlayer()))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s, it is your turn to play", game.ActivePlayer))
 		return
 	}
 
@@ -120,7 +118,7 @@ func handleGame(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	log.Println("")
 	game := games[m.ChannelID]
-	if game == nil || !game.IsActive() {
+	if game == nil || !game.IsActive {
 		return
 	}
 
