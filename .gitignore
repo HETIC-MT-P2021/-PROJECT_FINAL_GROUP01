@@ -18,3 +18,5 @@ vendor/
 posgres-data/
 
 .env
+
+tmp/
