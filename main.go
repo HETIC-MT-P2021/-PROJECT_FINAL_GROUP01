@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/dimo/bot"
 	"github.com/dimo/database"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -31,7 +33,22 @@ func main() {
 
 	database.ConnectToDB(env["DB_HOST"], env["DB_NAME"], env["DB_USER"], env["DB_PASSWORD"], dbPort)
 
-	// Bot connection
+	// Start Dimo API
+	go func() {
+		// creates a new instance of a mux router
+		myRouter := mux.NewRouter().StrictSlash(true)
+
+		// replace http.HandleFunc with myRouter.HandleFunc
+		myRouter.HandleFunc("/players", bot.FetchAllPlayers)
+		myRouter.HandleFunc("/rounds", bot.FetchAllRounds)
+
+		// finally, instead of passing in nil, we want
+		// to pass in our newly created router as the second
+		// argument
+		log.Fatal(http.ListenAndServe(":8081", myRouter))
+	}()
+
+	// Start Dimo bot server
 	games = make(map[string]*bot.Game)
 
 	var conf = bot.NewConfig
@@ -52,7 +69,8 @@ func main() {
 
 	defer sess.Close()
 
-	fmt.Println("Dimo Now running, Press CTRL-C to exit")
+	fmt.Println("Dimo API and Bot server is now running...\nPress CTRL + C to exit process.")
+
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-ch

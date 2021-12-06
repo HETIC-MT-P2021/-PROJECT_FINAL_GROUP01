@@ -1,16 +1,19 @@
 package bot
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/dimo/database"
+	"net/http"
 	"time"
 )
 
 type Round struct {
-	GameId      int
-	PlayerId    string
-	Reason      string
-	Word        string
-	SubmittedAt int64
+	GameId      int    `json:"game_id"`
+	PlayerId    string `json:"player_id"`
+	Reason      string `json:"reason"`
+	Word        string `json:"word"`
+	SubmittedAt int64  `json:"submitted_at"`
 }
 
 func NewRound(game Game, player Player, word string) Round {
@@ -48,4 +51,32 @@ func insertRound(round *Round) (*Round, error) {
 	}
 
 	return round, nil
+}
+
+func FetchAllRounds(w http.ResponseWriter, r *http.Request) {
+	rows, err := database.Database.Query("SELECT * FROM round")
+	if err != nil {
+		panic(err)
+	}
+
+	defer rows.Close()
+
+	var rounds []Round
+
+	for rows.Next() {
+		var rd Round
+
+		err := rows.Scan(&rd.GameId, &rd.PlayerId, &rd.Reason, &rd.Word, &rd.SubmittedAt)
+		if err != nil {
+			panic(err)
+		}
+
+		rounds = append(rounds, rd)
+	}
+	if err = rows.Err(); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Endpoint Hit: returnAllRounds")
+	json.NewEncoder(w).Encode(rounds)
 }
